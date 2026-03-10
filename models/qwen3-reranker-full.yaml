@@ -9,10 +9,10 @@ metadata:
     opendatahub.io/serving-runtime-scope: global
     opendatahub.io/template-display-name: vLLM NVIDIA GPU ServingRuntime for KServe
     opendatahub.io/template-name: vllm-cuda-runtime
-    openshift.io/display-name: qwen-llm
+    openshift.io/display-name: qwen3-ranker
   labels:
     opendatahub.io/dashboard: "true"
-  name: qwen-llm
+  name: qwen3-ranker
 spec:
   annotations:
     opendatahub.io/kserve-runtime: vllm
@@ -23,6 +23,8 @@ spec:
     - --port=8080
     - --model=/mnt/models
     - --served-model-name={{.Name}}
+    - --hf_overrides 
+    - '{"architectures": ["Qwen3ForSequenceClassification"],"classifier_from_token": ["no", "yes"],"is_original_qwen3_reranker": true}'
     command:
     - python
     - -m
@@ -54,22 +56,17 @@ metadata:
   annotations:
     opendatahub.io/hardware-profile-name: nvidia-gpu-serving
     opendatahub.io/hardware-profile-namespace: redhat-ods-applications
-    openshift.io/display-name: qwen-llm
+    openshift.io/display-name: qwen3-ranker
     serving.kserve.io/deploymentMode: RawDeployment
   labels:
     opendatahub.io/dashboard: "true"
-  name: qwen-llm
+  name: qwen3-ranker
 spec:
   predictor:
-    annotations:
-      serving.knative.dev/progress-deadline: 30m
     automountServiceAccountToken: false
     maxReplicas: 1
     minReplicas: 1
     model:
-      args:
-      - --tensor-parallel-size=2
-      - --trust-remote-code
       modelFormat:
         name: vLLM
       name: ""
@@ -77,13 +74,13 @@ spec:
         limits:
           cpu: "4"
           memory: 8Gi
-          nvidia.com/gpu: "2"
+          nvidia.com/gpu: "1"
         requests:
           cpu: "4"
           memory: 8Gi
-          nvidia.com/gpu: "2"
-      runtime: qwen-llm
-      storageUri: oci://quay.io/noeloc/qwen3-14b-fp8-dynamic:latest
+          nvidia.com/gpu: "1"
+      runtime: qwen3-ranker
+      storageUri: oci://quay.io/noeloc/qwen3-reranker-0.6b:latest
     tolerations:
     - effect: NoSchedule
       key: nvidia-gpu-only
@@ -91,3 +88,4 @@ spec:
     - effect: NoSchedule
       key: nvidia.com/gpu
       operator: Exists
+
